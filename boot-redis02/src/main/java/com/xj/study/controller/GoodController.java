@@ -6,6 +6,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 /**
  * @author xijie
  * @version V1.0
@@ -19,9 +21,17 @@ public class GoodController {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
+    private String REDIS_LOCK = "atguigulock";
+
     @GetMapping("/buy_Goods")
     public String buy_Goods() {
-        synchronized (this) {
+        String value = UUID.randomUUID().toString()+Thread.currentThread().getName();
+                try {
+                    Boolean flag = stringRedisTemplate.opsForValue().setIfAbsent(REDIS_LOCK,value).booleanValue();
+                    if(!flag){
+                return "加锁失败！";
+
+            }
             String goodsNum = stringRedisTemplate.opsForValue().get("goods:001");
             int goodsNumber = goodsNum == null ? 0 : Integer.valueOf(goodsNum);
             if (goodsNumber > 0) {
@@ -33,7 +43,10 @@ public class GoodController {
                 System.out.println("商品已售罄/活动结束/调用超时，欢迎下次光临！，" + "\t 服务提供端口" + serverport);
             }
             return "商品已售罄/活动结束/调用超时，欢迎下次光临！，" + "\t 服务提供端口" + serverport;
+        }finally {
+            stringRedisTemplate.delete(REDIS_LOCK);
         }
+
     }
 
 }
