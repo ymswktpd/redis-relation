@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -47,10 +48,28 @@ public class GoodController {
             }
             return "商品已售罄/活动结束/调用超时，欢迎下次光临！，" + "\t 服务提供端口" + serverport;
         }finally {
+            //判断加锁与解锁不是原子性的，锁失效后会出现误解锁现象，需要调用lua脚本
             if(stringRedisTemplate.opsForValue().get(REDIS_LOCK).equalsIgnoreCase(value)){
                 stringRedisTemplate.delete(REDIS_LOCK);
             }
+            //        不用lua脚本，如何处理误解锁（redis事务）
+//            while (true){
+//                stringRedisTemplate.watch(REDIS_LOCK);
+//                if(stringRedisTemplate.opsForValue().get(REDIS_LOCK).equalsIgnoreCase(value)){
+//                    //生产上不要随便设置
+//                    stringRedisTemplate.setEnableTransactionSupport(true);
+//                    stringRedisTemplate.multi();
+//                    stringRedisTemplate.delete(REDIS_LOCK);
+//                    List list = stringRedisTemplate.exec();
+//                    if(list.size() == 0){
+//                        continue;
+//                    }
+//                }
+//                stringRedisTemplate.unwatch();
+//                break;
+//            }
         }
+
 
     }
 //        if(lock.tryLock(3L, TimeUnit.SECONDS)){

@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -48,6 +49,20 @@ public class GoodController {
             if(stringRedisTemplate.opsForValue().get(REDIS_LOCK).equalsIgnoreCase(value)){
                 stringRedisTemplate.delete(REDIS_LOCK);
             }
+//            while (true){
+//                stringRedisTemplate.watch(REDIS_LOCK);
+//                if(stringRedisTemplate.opsForValue().get(REDIS_LOCK).equalsIgnoreCase(value)){
+//                    stringRedisTemplate.setEnableTransactionSupport(true);
+//                    stringRedisTemplate.multi();
+//                    stringRedisTemplate.delete(REDIS_LOCK);
+//                    List list = stringRedisTemplate.exec();
+//                    if(list.size() == 0){
+//                        continue;
+//                    }
+//                }
+//                stringRedisTemplate.unwatch();
+//                break;
+//            }
         }
 
     }
