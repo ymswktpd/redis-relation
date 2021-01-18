@@ -47,7 +47,9 @@ public class GoodController {
             }
             return "商品已售罄/活动结束/调用超时，欢迎下次光临！，" + "\t 服务提供端口" + serverport;
         }finally {
-            stringRedisTemplate.delete(REDIS_LOCK);
+            if(stringRedisTemplate.opsForValue().get(REDIS_LOCK).equalsIgnoreCase(value)){
+                stringRedisTemplate.delete(REDIS_LOCK);
+            }
         }
 
     }
