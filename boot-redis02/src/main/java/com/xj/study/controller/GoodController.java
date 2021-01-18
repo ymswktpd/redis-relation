@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author xijie
@@ -26,9 +27,10 @@ public class GoodController {
     @GetMapping("/buy_Goods")
     public String buy_Goods() {
         String value = UUID.randomUUID().toString()+Thread.currentThread().getName();
-                try {
-                    Boolean flag = stringRedisTemplate.opsForValue().setIfAbsent(REDIS_LOCK,value).booleanValue();
-                    if(!flag){
+        try {
+            Boolean flag = stringRedisTemplate.opsForValue().setIfAbsent(REDIS_LOCK,value).booleanValue();
+            stringRedisTemplate.expire(REDIS_LOCK,10L, TimeUnit.SECONDS);
+            if(!flag){
                 return "加锁失败！";
 
             }

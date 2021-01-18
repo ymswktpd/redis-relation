@@ -31,6 +31,7 @@ public class GoodController {
         String value = UUID.randomUUID().toString()+Thread.currentThread().getName();
                 try {
                     Boolean flag = stringRedisTemplate.opsForValue().setIfAbsent(REDIS_LOCK,value).booleanValue();
+                    stringRedisTemplate.expire(REDIS_LOCK,10L,TimeUnit.SECONDS);
                     if(!flag){
                 return "加锁失败！";
 
