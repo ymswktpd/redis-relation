@@ -1,6 +1,8 @@
 package com.xj.study.controller;
 
 import com.xj.study.config.RedisUtils;
+import org.redisson.Redisson;
+import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -27,16 +29,20 @@ public class GoodController {
     private StringRedisTemplate stringRedisTemplate;
 
     private String REDIS_LOCK = "atguigulock";
-
+    @Autowired
+    private Redisson redisson;
     @GetMapping("/buy_Goods")
     public String buy_Goods() throws Exception {
         String value = UUID.randomUUID().toString()+Thread.currentThread().getName();
-        try {
-            Boolean flag = stringRedisTemplate.opsForValue().setIfAbsent(REDIS_LOCK,value,10L,TimeUnit.SECONDS).booleanValue();
-            if(!flag){
-                return "获取锁失败！";
+        RLock redissonLock = redisson.getLock(REDIS_LOCK);
+        redissonLock.lock();
 
-            }
+        try {
+//            Boolean flag = stringRedisTemplate.opsForValue().setIfAbsent(REDIS_LOCK,value,10L,TimeUnit.SECONDS).booleanValue();
+//            if(!flag){
+//                return "获取锁失败！";
+//
+//            }
             String goodsNum = stringRedisTemplate.opsForValue().get("goods:001");
             int goodsNumber = goodsNum == null ? 0 : Integer.valueOf(goodsNum);
             if (goodsNumber > 0) {
@@ -49,9 +55,10 @@ public class GoodController {
             }
             return "商品已售罄/活动结束/调用超时，欢迎下次光临！，" + "\t 服务提供端口" + serverport;
         }finally {
-            if(stringRedisTemplate.opsForValue().get(REDIS_LOCK).equalsIgnoreCase(value)){
-                stringRedisTemplate.delete(REDIS_LOCK);
-            }
+            redissonLock.unlock();
+//            if(stringRedisTemplate.opsForValue().get(REDIS_LOCK).equalsIgnoreCase(value)){
+//                stringRedisTemplate.delete(REDIS_LOCK);
+//            }
 //            while (true){
 //                stringRedisTemplate.watch(REDIS_LOCK);
 //                if(stringRedisTemplate.opsForValue().get(REDIS_LOCK).equalsIgnoreCase(value)){
@@ -67,23 +74,23 @@ public class GoodController {
 //                break;
 //            }
             //            使用lua脚本方式
-            Jedis jedis = RedisUtils.getJedis();
-            String script = "if redis.call(\"get\",KEYS[1]) == ARGV[1]\n" +
-                    "then\n" +
-                    "    return redis.call(\"del\",KEYS[1])\n" +
-                    "else\n" +
-                    "    return 0\n" +
-                    "end";
-            try{
-                Object o = jedis.eval(script, Collections.singletonList(REDIS_LOCK), Collections.singletonList(value));
-                if("1".equals(o.toString())){
-                    System.out.println("-------del redis lock");
-                }else{
-                    System.out.println("-------del redis lock failed");
-                }
-            }finally {
-                jedis.close();
-            }
+//            Jedis jedis = RedisUtils.getJedis();
+//            String script = "if redis.call(\"get\",KEYS[1]) == ARGV[1]\n" +
+//                    "then\n" +
+//                    "    return redis.call(\"del\",KEYS[1])\n" +
+//                    "else\n" +
+//                    "    return 0\n" +
+//                    "end";
+//            try{
+//                Object o = jedis.eval(script, Collections.singletonList(REDIS_LOCK), Collections.singletonList(value));
+//                if("1".equals(o.toString())){
+//                    System.out.println("-------del redis lock");
+//                }else{
+//                    System.out.println("-------del redis lock failed");
+//                }
+//            }finally {
+//                jedis.close();
+//            }
         }
 
     }
